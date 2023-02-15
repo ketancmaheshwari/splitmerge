@@ -1,0 +1,19 @@
+ 
+- Assume that all incoming datasets over the size limit will be stored in some other location. Where exactly doesn't matter for right now - you can test this on your laptop or other local machine
+- Assume that the split/join task runs periodically (frequency TBD). Here's its basic structure
+    - Look for incoming datasets which need to be split up. This could be an inspection of the "incoming area" on whatever filesystem. More properly, though, it should be a query of a particular database table. This implies that when an oversize dataset is accepted by Constellation, a row is written to this table with the relevant information about the dataset.
+    - For each row in the incoming_oversize table:
+      - determine how to split the dataset
+      - assign unique filenames to the chunks
+     - copy the chunks to Themis
+      - record the chunks in a separate database table. This table should have as PK a unique identifier for the "unsplit" dataset. A row should be written for each chunk, containing the filename generated for it and any other information needed to reconstitute the oversize dataset.
+      - record information about the unsplit dataset in a third database table so that it can be presented through the UI later.
+    - Remove the oversize dataset from the temporary location and delete the corresponding row from the incoming_oversize table.
+- On the retrieval side, we need to scan the unsplit  table for the metadata of the unsplit datasets which we've split up. This will go into whatever UI is presenting this information.
+ 
+So, as I see it, here's how you can make progress without being too much encumbered by the Constellation source code mess.
+- you can develop this as an independent process which will run periodically as described above. Eventually we can put a microservice scaffolding around it but that's not immediately necessary.
+- Constellation uses MariaDB, so you can figure out an instance of that to use for development.
+- To start with you can just copy to and from different places on the filesystem – I think with this approach we shouldn’t need to use Globus at all, but we can tackle that after you have a basic working setup.
+- Deliverables for this are the service itself and the database schema for the tables involved. You should feel free to add whatever information you feel is necessary to these tables.
+ 
